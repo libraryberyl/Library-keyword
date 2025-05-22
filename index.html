@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Quest: The Librarian's Challenge</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .game-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 700px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .scenario-area, .input-area, .feedback-area, .score-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .scenario-area {
+            background-color: #eaf2f8;
+        }
+        .scenario-area h2 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        .input-area label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .input-area input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .input-area .boolean-helper {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 5px;
+        }
+        .input-area button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .input-area button:hover {
+            background-color: #2980b9;
+        }
+        .feedback-area {
+            background-color: #f9f9f9;
+        }
+        .feedback-area h3 {
+            margin-top: 0;
+            color: #16a085;
+        }
+        .results-meter {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .results-meter.too-many { color: #e74c3c; }
+        .results-meter.too-few { color: #f39c12; }
+        .results-meter.good { color: #2ecc71; }
+        .tips ul {
+            list-style-type: '💡 ';
+            padding-left: 20px;
+        }
+        .score-area {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            background-color: #ecf0f1;
+        }
+        #next-scenario-btn {
+            display: none; /* Hidden initially */
+            background-color: #27ae60;
+        }
+        #next-scenario-btn:hover {
+            background-color: #229954;
+        }
+        .help-text {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Keyword Quest</h1>
+
+        <div class="scenario-area">
+            <h2>Research Scenario:</h2>
+            <p id="scenario-text"></p>
+        </div>
+
+        <div class="input-area">
+            <label for="keywords-input">Enter your keywords:</label>
+            <input type="text" id="keywords-input" placeholder="e.g., climate change AND arctic">
+            <div class="boolean-helper">
+                Use AND, OR, NOT. For example: `(cats OR felines) AND diet`. Use `*` for truncation (e.g., `educat*`).
+            </div>
+            <button id="search-btn">Consult Catalog</button>
+        </div>
+
+        <div class="feedback-area">
+            <h3>Librarian's Feedback:</h3>
+            <div id="results-meter" class="results-meter"></div>
+            <div id="keyword-analysis"></div>
+            <div class="tips">
+                <ul id="tips-list"></ul>
+            </div>
+        </div>
+
+        <div class="score-area">
+            Score: <span id="score">0</span>
+        </div>
+
+        <div class="help-text">
+            <strong>Quick Tips:</strong>
+            <ul>
+                <li><strong>AND:</strong> Narrows your search (e.g., `dogs AND training`). Finds items with BOTH terms.</li>
+                <li><strong>OR:</strong> Broadens your search (e.g., `teenagers OR adolescents`). Finds items with EITHER term. Great for synonyms.</li>
+                <li><strong>NOT:</strong> Excludes terms (e.g., `jaguar NOT car`). Use with caution!</li>
+                <li><strong>Truncation (*):</strong> Finds variations of a word root (e.g., `comput*` finds computer, computing, computation).</li>
+                <li><strong>Parentheses ( ):</strong> Group terms, especially with OR: `(renewable energy OR solar power) AND policy`.</li>
+            </ul>
+        </div>
+
+
+        <button id="next-scenario-btn" class="input-area button">Next Scenario</button>
+    </div>
+
+    <script>
+        const scenarios = [
+            {
+                id: 1,
+                question: "You need to find information on the psychological impact of social media use on adolescents.",
+                coreConcepts: ["social media", "psychological", "adolescents"], // Simplified keywords
+                idealKeywords: [
+                    { term: "social media", synonyms: ["facebook", "instagram", "tiktok"] },
+                    { term: "psychological", synonyms: ["mental health", "well-being", "anxiety", "depression"] },
+                    { term: "adolescents", synonyms: ["teenagers", "youth"] }
+                ],
+                expectedBoolean: "AND"
+            },
+            {
+                id: 2,
+                question: "Your professor wants sources discussing sustainable urban planning in developing countries.",
+                coreConcepts: ["sustainable", "urban planning", "developing countries"],
+                idealKeywords: [
+                    { term: "sustainable", synonyms: ["eco-friendly", "green"] },
+                    { term: "urban planning", synonyms: ["city planning", "urban design"] },
+                    { term: "developing countries", synonyms: ["third world", "emerging economies", "global south"] }
+                ],
+                expectedBoolean: "AND"
+            },
+            {
+                id: 3,
+                question: "Research the history of jazz music in New Orleans OR Chicago.",
+                coreConcepts: ["jazz music", "history", "new orleans", "chicago"],
+                idealKeywords: [
+                    { term: "jazz music", synonyms: ["jazz"] },
+                    { term: "history", synonyms: ["origins", "development"] },
+                    { term: "new orleans", synonyms: [] },
+                    { term: "chicago", synonyms: [] }
+                ],
+                expectedBoolean: "OR for locations" // Special case
+            },
+            {
+                id: 4,
+                question: "Find information about the effects of climate change on agriculture, but NOT focusing on wine production.",
+                coreConcepts: ["climate change", "agriculture", "wine"], // 'wine' is for NOT
+                idealKeywords: [
+                    { term: "climate change", synonyms: ["global warming"] },
+                    { term: "agriculture", synonyms: ["farming", "crops"] },
+                    { term: "wine", synonyms: ["vineyards", "grapes"] } // for NOT
+                ],
+                expectedBoolean: "AND_NOT"
+            }
+        ];
+
+        let currentScenarioIndex = 0;
+        let score = 0;
+
+        const scenarioTextEl = document.getElementById('scenario-text');
+        const keywordsInputEl = document.getElementById('keywords-input');
+        const searchBtn = document.getElementById('search-btn');
+        const nextScenarioBtn = document.getElementById('next-scenario-btn');
+        const resultsMeterEl = document.getElementById('results-meter');
+        const keywordAnalysisEl = document.getElementById('keyword-analysis');
+        const tipsListEl = document.getElementById('tips-list');
+        const scoreEl = document.getElementById('score');
+
+        function loadScenario(index) {
+            if (index >= scenarios.length) {
+                scenarioTextEl.textContent = "Congratulations! You've completed all scenarios.";
+                keywordsInputEl.disabled = true;
+                searchBtn.disabled = true;
+                nextScenarioBtn.style.display = 'none';
+                resultsMeterEl.textContent = "";
+                keywordAnalysisEl.textContent = "Final Score: " + score;
+                tipsListEl.innerHTML = "";
+                return;
+            }
+            const scenario = scenarios[index];
+            scenarioTextEl.textContent = scenario.question;
+            keywordsInputEl.value = '';
+            keywordsInputEl.disabled = false;
+            searchBtn.disabled = false;
+            resultsMeterEl.textContent = '';
+            resultsMeterEl.className = 'results-meter'; // Reset class
+            keywordAnalysisEl.textContent = '';
+            tipsListEl.innerHTML = '';
+            nextScenarioBtn.style.display = 'none';
+        }
+
+        function checkKeywords(userInput, scenario) {
+            let currentPoints = 0;
+            let feedback = [];
+            let tips = [];
+            let foundConcepts = 0;
+            let usedAnd = false;
+            let usedOr = false;
+            let usedNot = false;
+            let usedTruncation = false;
+
+            const lowerInput = userInput.toLowerCase();
+
+            // Basic Boolean check
+            if (lowerInput.includes(" and ")) usedAnd = true;
+            if (lowerInput.includes(" or ")) usedOr = true;
+            if (lowerInput.includes(" not ")) usedNot = true;
+            if (lowerInput.includes("*")) usedTruncation = true;
+
+            // Check for core concepts
+            let conceptsPresent = [];
+            scenario.idealKeywords.forEach(ideal => {
+                let conceptFound = false;
+                if (lowerInput.includes(ideal.term.toLowerCase())) {
+                    conceptFound = true;
+                }
+                ideal.synonyms.forEach(syn => {
+                    if (lowerInput.includes(syn.toLowerCase())) {
+                        conceptFound = true;
+                        tips.push(`Good use of synonym/related term: "${syn}" for "${ideal.term}".`);
+                        currentPoints += 2; // Bonus for synonym
+                    }
+                });
+                if (conceptFound) {
+                    foundConcepts++;
+                    conceptsPresent.push(ideal.term);
+                }
+            });
+
+            if (foundConcepts >= 2) {
+                feedback.push(`You identified ${foundConcepts} key concepts: ${conceptsPresent.join(', ')}.`);
+                currentPoints += foundConcepts * 5;
+            } else if (foundConcepts === 1) {
+                feedback.push(`You found one key concept: ${conceptsPresent[0]}. Try to find others.`);
+                currentPoints += 5;
+            } else {
+                feedback.push("Try to identify the main concepts from the scenario.");
+            }
+
+
+            // Simulate results meter & provide Boolean feedback
+            let resultStatus = "Too Many Results!";
+            resultsMeterEl.className = 'results-meter too-many';
+
+            if (scenario.expectedBoolean === "AND") {
+                if (usedAnd && foundConcepts >= 2) {
+                    feedback.push("Good use of AND to combine distinct concepts.");
+                    currentPoints += 10;
+                    resultStatus = "Good Results!";
+                    resultsMeterEl.className = 'results-meter good';
+                } else if (foundConcepts >= 2 && !usedAnd) {
+                    tips.push("Connect your different concepts with AND to narrow the search.");
+                } else if (!usedAnd && foundConcepts < 2 && userInput.length > 0) {
+                    tips.push("This search is likely too broad. Are there more concepts? Use AND.");
+                }
+            } else if (scenario.expectedBoolean === "OR for locations") { // Special handling for scenario 3
+                const hasLocationOr = (lowerInput.includes("new orleans or") || lowerInput.includes("or new orleans") ||
+                                       lowerInput.includes("chicago or") || lowerInput.includes("or chicago")) &&
+                                       (lowerInput.includes("new orleans") && lowerInput.includes("chicago"));
+                if (hasLocationOr && foundConcepts >=3 && usedAnd) { // jazz AND history AND (new orleans OR chicago)
+                     feedback.push("Excellent! You used OR for alternative locations and AND to combine other concepts.");
+                     currentPoints += 15;
+                     resultStatus = "Good Results!";
+                     resultsMeterEl.className = 'results-meter good';
+                } else if (usedOr && foundConcepts >=2) {
+                    tips.push("Remember to use OR for synonyms or alternatives, and AND to combine main ideas.");
+                } else {
+                     tips.push("For this scenario, think about how to search for EITHER New Orleans OR Chicago, while still including other key terms like 'jazz' and 'history'.");
+                }
+            } else if (scenario.expectedBoolean === "AND_NOT") {
+                if (usedAnd && usedNot && foundConcepts >= 2) { // Assuming one of the concepts is the one to be NOTted
+                    feedback.push("Good use of AND to combine concepts and NOT to exclude terms.");
+                    currentPoints += 15;
+                    resultStatus = "Good Results!";
+                    resultsMeterEl.className = 'results-meter good';
+                } else if (usedAnd && !usedNot && foundConcepts >=2 && lowerInput.includes(scenario.coreConcepts[2])) { // e.g., includes 'wine'
+                    tips.push(`Remember the scenario asked to exclude information about '${scenario.coreConcepts[2]}'. How can you do that?`);
+                } else if (usedAnd && foundConcepts >= 2) {
+                    tips.push("You're combining concepts, but did you need to exclude anything for this scenario?");
+                }
+            }
+
+            if (usedTruncation) {
+                tips.push("Using truncation (*) can be helpful for finding word variations!");
+                currentPoints += 3;
+            }
+
+            if (userInput.split(' ').length < 2 && userInput.length > 0) {
+                tips.push("Single keyword searches are often too broad. Try adding more terms.");
+                resultStatus = "Too Many Results!";
+                resultsMeterEl.className = 'results-meter too-many';
+            } else if (userInput.split(' ').length > 7 && usedAnd && foundConcepts > 2) { // Very rough estimate
+                resultStatus = "Too Few Results? (Potentially too specific)";
+                resultsMeterEl.className = 'results-meter too-few';
+                tips.push("Your search is quite specific. If you get too few results, consider removing less critical terms or using broader synonyms.");
+            }
+
+
+            resultsMeterEl.textContent = `Results Meter: ${resultStatus}`;
+            keywordAnalysisEl.innerHTML = feedback.join('<br>');
+            tipsListEl.innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
+
+            if (resultStatus === "Good Results!") {
+                nextScenarioBtn.style.display = 'inline-block';
+                searchBtn.disabled = true;
+                keywordsInputEl.disabled = true;
+            }
+            return currentPoints;
+        }
+
+
+        searchBtn.addEventListener('click', () => {
+            const userInput = keywordsInputEl.value.trim();
+            if (!userInput) {
+                keywordAnalysisEl.textContent = "Please enter some keywords.";
+                resultsMeterEl.textContent = '';
+                tipsListEl.innerHTML = '';
+                return;
+            }
+            const scenario = scenarios[currentScenarioIndex];
+            const pointsEarned = checkKeywords(userInput, scenario);
+            score += pointsEarned;
+            scoreEl.textContent = score;
+        });
+
+        nextScenarioBtn.addEventListener('click', () => {
+            currentScenarioIndex++;
+            loadScenario(currentScenarioIndex);
+        });
+
+        // Initialize
+        loadScenario(currentScenarioIndex);
+    </script>
+</body>
+</html>
